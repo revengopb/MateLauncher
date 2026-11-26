@@ -18,16 +18,33 @@ jobs:
       - name: Checkout PojavXMojo
         uses: actions/checkout@v4
 
+      - name: Setup Java 8
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
       - name: Setup Java 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
+      - name: Check Java installations
+        run: |
+          java -version
+          echo "Java 8: $JAVA_HOME_8_X64"
+          test -d "$JAVA_HOME_8_X64"
+
       - name: Clone Amethyst Android Source
         run: |
           git clone --depth 1 --recurse-submodules \
             https://github.com/AngelAuraMC/Amethyst-Android.git engine
+
+      - name: Configure Java toolchain
+        working-directory: engine
+        run: |
+          echo "org.gradle.java.installations.paths=$JAVA_HOME_8_X64,$JAVA_HOME" >> gradle.properties
 
       - name: Build Android APK
         working-directory: engine
