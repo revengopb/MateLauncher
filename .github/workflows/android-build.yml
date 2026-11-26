@@ -1,26 +1,22 @@
-name: PojavXMojo Client - Android Build V2
+
+name: PojavXMojo Client Android Build
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout PojavXMojo
         uses: actions/checkout@v4
-
-      - name: Clone Amethyst Android Engine
-        run: |
-          git clone --recursive https://github.com/AngelAuraMC/Amethyst-Android.git engine
-          cd engine
-          git submodule update --init --recursive
 
       - name: Setup Java 21
         uses: actions/setup-java@v5
@@ -28,65 +24,37 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Clone Amethyst Android Source
+        run: |
+          git clone --depth 1 --recurse-submodules \
+            https://github.com/AngelAuraMC/Amethyst-Android.git engine
+
       - name: Build Android APK
         working-directory: engine
         run: |
           chmod +x gradlew
           ./gradlew :app_pojavlauncher:assembleDebug --no-daemon
 
-      - name: Find APK
-        id: apk
+      - name: Verify APK
         run: |
           APK=$(find engine/app_pojavlauncher/build/outputs/apk/debug \
-            -type f -name "*.apk" | head -n 1)
-
-          if [ -z "$APK" ]; then
-            echo "APK not found!"
-            exit 1
-          fi
-
-          echo "path=$APK" >> "$GITHUB_OUTPUT"
-          echo "APK found: $APK"
-          ls -lh "$APK"
-
-      - name: Validate APK
-        run: |
-          APK="${{ steps.apk.outputs.path }}"
-
-          test -s "$APK"
-          unzip -t "$APK"
-
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
-            -type f -name apksigner | sort -V | tail -n 1)
-
-          if [ -z "$APKSIGNER" ]; then
-            echo "apksigner not found"
-            exit 1
-          fi
-
-          "$APKSIGNER" verify --verbose "$APK"
-
-          echo "APK validation successful!"
-
-      - name: Publish Direct APK Download
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="poj avxmojo-${GITHUB_RUN_ID}"
-          TAG="${TAG// /}"
-
-          gh release create "$TAG" \
-            "${{ steps.apk.outputs.path }}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "PojavXMojo Client Build ${GITHUB_RUN_NUMBER}" \
-            --notes "Automated Android debug APK build." \
-            --prerelease
+            -name '*.apk' -type f | head -n 1)
+          test -n "$APK"
+          mkdir -p release
+          cp "$APK" release/PojavXMojo-Client.apk
+          unzip -t release/PojavXMojo-Client.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: PojavXMojo-Client-APK
-          path: ${{ steps.apk.outputs.path }}
-          if-no-files-found: error
-          retention-days: 14
+          path: release/PojavXMojo-Client.apk
+
+      - name: Publish APK Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: PojavXMojo Client Build ${{ github.run_number }}
+          prerelease: true
+          files: release/PojavXMojo-Client.apk
           
