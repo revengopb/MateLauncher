@@ -1,4 +1,4 @@
-# PojavXMojo — Android launcher project bootstrap
+# MateLauncher — Android launcher project bootstrap
 
 This starter repository prepares a GitHub Actions build for the Android
 Minecraft Java launcher engine Amethyst-Android.
@@ -9,19 +9,19 @@ Minecraft Java launcher engine Amethyst-Android.
 - Runs the upstream Android debug build on GitHub Actions.
 - Uploads the resulting APK as a workflow artifact.
 
-**This is a build bootstrap, not yet a fully rebranded PojavXMojo app.**
+**This is a build bootstrap, not yet a fully rebranded MateLauncher app.**
 The first successful workflow currently builds the upstream engine. The
-PojavXMojo application name, package ID, purple UI, icons and feature changes
+MateLauncher application name, package ID, purple UI, icons and feature changes
 must be implemented in the engine source in a subsequent customization step.
 
 ## Install
 
-1. Create/open: https://github.com/revengopb/PojavXMojo
+1. Create/open: https://github.com/revengopb/MateLauncher
 2. Upload the contents of this ZIP to the repository root. Make sure the
    `.github/workflows/android-build.yml` file is included.
 3. Commit the files to the `main` branch.
 4. Open the repository's **Actions** tab.
-5. Select **PojavXMojo Android Build** and choose **Run workflow**.
+5. Select **MateLauncher Android Build** and choose **Run workflow**.
 6. When it finishes, open the workflow run and download the
    `PojavXMojo-engine-debug-apk` artifact.
 
@@ -38,9 +38,9 @@ The upstream project uses recursive Git submodules and prebuilt JRE components
 provided by its CI. Review its current README and license before distributing
 modified builds.
 
-## Planned PojavXMojo customization
+## Planned MateLauncher customization
 
-1. Set the app display name to `PojavXMojo`.
+1. Set the app display name to `MateLauncher`.
 2. Set a unique application ID after checking it does not conflict with an
    existing installed app.
 3. Apply a purple/black theme and custom launcher icon.
