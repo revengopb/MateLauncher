@@ -1,6 +1,6 @@
 # PojavXMojo project status
 
-- [x] Project name selected: PojavXMojo
+- [x] Project name selected: MateLauncher
 - [x] Android target selected
 - [x] Purple/black visual direction selected
 - [x] GitHub Actions bootstrap workflow included
