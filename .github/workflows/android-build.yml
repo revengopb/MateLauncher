@@ -30,48 +30,51 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Check Java installations
-        run: |
-          java -version
-          echo "Java 8: $JAVA_HOME_8_X64"
-          test -d "$JAVA_HOME_8_X64"
-
-      - name: Clone Amethyst Android Source
+      - name: Clone Amethyst Source
         run: |
           git clone --depth 1 --recurse-submodules \
             https://github.com/AngelAuraMC/Amethyst-Android.git engine
 
-      - name: Configure Java toolchain
+      - name: Configure Java Toolchains
         working-directory: engine
         run: |
           echo "org.gradle.java.installations.paths=$JAVA_HOME_8_X64,$JAVA_HOME" >> gradle.properties
 
-      - name: Build Android APK
+      - name: Build APK
         working-directory: engine
         run: |
           chmod +x gradlew
           ./gradlew :app_pojavlauncher:assembleDebug --no-daemon
 
-      - name: Verify APK
+      - name: Prepare APK
         run: |
-          APK=$(find engine/app_pojavlauncher/build/outputs/apk/debug \
-            -name '*.apk' -type f | head -n 1)
+          APK=$(find engine/app_pojavlauncher/build/outputs/apk/debug -type f -name '*.apk' | head -n 1)
           test -n "$APK"
           mkdir -p release
           cp "$APK" release/PojavXMojo-Client.apk
           unzip -t release/PojavXMojo-Client.apk
 
-      - name: Upload APK Artifact
+      - name: Diagnose APK
+        run: |
+          APK="release/PojavXMojo-Client.apk"
+          echo "=== APK SIZE ==="
+          ls -lh "$APK"
+
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -n 1)
+
+          echo "=== SIGNATURE ==="
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+
+          echo "=== APK BADGING ==="
+          "$AAPT" dump badging "$APK" | head -n 30
+
+          echo "=== NATIVE LIBRARIES ==="
+          unzip -Z1 "$APK" | grep -E '^lib/[^/]+/.*\.so$' | head -n 50 || true
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: PojavXMojo-Client-APK
+          name: PojavXMojo-Client-Diagnostic
           path: release/PojavXMojo-Client.apk
-
-      - name: Publish APK Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: PojavXMojo Client Build ${{ github.run_number }}
-          prerelease: true
-          files: release/PojavXMojo-Client.apk
           
