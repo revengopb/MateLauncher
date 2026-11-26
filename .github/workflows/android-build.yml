@@ -1,5 +1,5 @@
 
-name: PojavXMojo Client Android Build
+name: MateLauncher Client Android Build
 
 on:
   workflow_dispatch:
