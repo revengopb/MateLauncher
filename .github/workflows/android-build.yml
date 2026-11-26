@@ -30,7 +30,13 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Clone Amethyst Source
+      - name: Check Java Installations
+        run: |
+          java -version
+          echo "Java 8: $JAVA_HOME_8_X64"
+          test -d "$JAVA_HOME_8_X64"
+
+      - name: Clone Amethyst Android Source
         run: |
           git clone --depth 1 --recurse-submodules \
             https://github.com/AngelAuraMC/Amethyst-Android.git engine
@@ -40,7 +46,7 @@ jobs:
         run: |
           echo "org.gradle.java.installations.paths=$JAVA_HOME_8_X64,$JAVA_HOME" >> gradle.properties
 
-      - name: Build APK
+      - name: Build Android APK
         working-directory: engine
         run: |
           chmod +x gradlew
@@ -48,22 +54,30 @@ jobs:
 
       - name: Prepare APK
         run: |
-          APK=$(find engine/app_pojavlauncher/build/outputs/apk/debug -type f -name '*.apk' | head -n 1)
+          APK=$(find engine/app_pojavlauncher/build/outputs/apk/debug \
+            -type f -name '*.apk' | head -n 1)
+
           test -n "$APK"
           mkdir -p release
           cp "$APK" release/PojavXMojo-Client.apk
+
+          echo "=== ZIP INTEGRITY ==="
           unzip -t release/PojavXMojo-Client.apk
 
       - name: Diagnose APK
         run: |
           APK="release/PojavXMojo-Client.apk"
+
           echo "=== APK SIZE ==="
           ls -lh "$APK"
 
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
-          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -n 1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
+            -name apksigner | sort -V | tail -n 1)
 
-          echo "=== SIGNATURE ==="
+          AAPT=$(find "$ANDROID_HOME/build-tools" \
+            -name aapt | sort -V | tail -n 1)
+
+          echo "=== APK SIGNATURE ==="
           "$APKSIGNER" verify --verbose --print-certs "$APK"
 
           echo "=== APK BADGING ==="
@@ -72,9 +86,32 @@ jobs:
           echo "=== NATIVE LIBRARIES ==="
           unzip -Z1 "$APK" | grep -E '^lib/[^/]+/.*\.so$' | head -n 50 || true
 
-      - name: Upload APK
+      - name: Check APK Alignment
+        run: |
+          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" \
+            -name zipalign | sort -V | tail -n 1)
+
+          echo "=== ZIP ALIGNMENT CHECK ==="
+          "$ZIPALIGN" -c -v 4 release/PojavXMojo-Client.apk
+
+          echo "=== NATIVE ARCHITECTURES ==="
+          AAPT=$(find "$ANDROID_HOME/build-tools" \
+            -name aapt | sort -V | tail -n 1)
+
+          "$AAPT" dump badging release/PojavXMojo-Client.apk | \
+            grep -E "native-code|sdkVersion|targetSdkVersion"
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: PojavXMojo-Client-Diagnostic
           path: release/PojavXMojo-Client.apk
+
+      - name: Publish APK Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: PojavXMojo Client Build ${{ github.run_number }}
+          prerelease: true
+          files: release/PojavXMojo-Client.apk
           
