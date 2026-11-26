@@ -1,0 +1,45 @@
+name: PojavXMojo Android Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PojavXMojo bootstrap repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Fetch Amethyst Android engine
+        run: |
+          git clone --recursive https://github.com/AngelAuraMC/Amethyst-Android.git engine
+          cd engine
+          git submodule update --init --recursive
+
+      - name: Build Android debug APK
+        working-directory: engine
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PojavXMojo-engine-debug-apk
+          path: engine/app_pojavlauncher/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
